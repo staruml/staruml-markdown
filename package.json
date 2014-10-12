@@ -1,0 +1,18 @@
+{
+    "name": "staruml.markdown",
+    "title": "Markdown Documentation",
+    "description": "Support Markdown syntax for documentation and preview",
+    "homepage": "https://github.com/staruml/Markdown",
+    "issues": "https://github.com/staruml/Markdown/issues",
+    "version": "0.9.0",
+    "author": {
+        "name": "Minkyu Lee",
+        "email": "niklaus.lee@gmail.com",
+        "url": "https://github.com/niklauslee"
+    },
+    "license": "MIT",
+    "engines": {
+        "staruml": ">=2.0.0"
+
+    }
+}
