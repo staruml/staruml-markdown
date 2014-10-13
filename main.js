@@ -22,7 +22,7 @@
  */
 
 /*jslint vars: true, plusplus: true, devel: true, nomen: true, indent: 4, maxerr: 50, regexp: true */
-/*global define, $, _, window, app, type, appshell, document */
+/*global define, $, _, window, app, type, appshell, document, CodeMirror, markdown */
 
 define(function (require, exports, module) {
     "use strict";
@@ -38,16 +38,22 @@ define(function (require, exports, module) {
         ModelExplorerView  = app.getModule("explorer/ModelExplorerView"),
         PreferenceManager  = app.getModule("preference/PreferenceManager");
 
+    require("markdown.min");
+
     var markdownPanelTemplate = require("text!markdown-panel.html"),
         markdownPanel,
+        markdownEditor,
         $markdownPanel,
+        $markdownEditor,
+        $markdownPreview,
         $title,
         $close,
+        $markdownModeRadio,
+        $content,
         $button = $("<a id='toolbar-markdown' href='#' title='Markdown Documentation'></a>");
 
     var CMD_MARKDOWN   = "view.markdown",
         PREFERENCE_KEY = "view.markdown.visibility";
-
 
     /**
      * Show Relationships Panel
@@ -80,11 +86,23 @@ define(function (require, exports, module) {
         }
     }
 
+    function setMode(mode) {
+        if (mode === "edit") {
+            $markdownEditor.show();
+            $markdownPreview.hide();
+        } else if (mode === "preview") {
+            $markdownEditor.hide();
+            $markdownPreview.show();
+        }
+    }
+
+
     /**
      * Initialize Extension
      */
     function init() {
         // Load our stylesheet
+        ExtensionUtils.loadStyleSheet(module, "codemirror-monokai.css");
         ExtensionUtils.loadStyleSheet(module, "styles.less");
 
         // Toolbar Button
@@ -93,25 +111,35 @@ define(function (require, exports, module) {
             CommandManager.execute(CMD_MARKDOWN);
         });
 
-        // Setup RelationshipPanel
+        // Setup markdownPanel
         $markdownPanel = $(markdownPanelTemplate);
         $title = $markdownPanel.find(".title");
         $close = $markdownPanel.find(".close");
         $close.click(function () {
             hide();
         });
-        markdownPanel = PanelManager.createBottomPanel("?", $markdownPanel, 29);
-
-
-
-
-        var editor = CodeMirror.fromTextArea(document.getElementById("markdown-editor"), {
-            lineNumbers: true,
-            styleActiveLine: true,
-            matchBrackets: true
+        $markdownModeRadio = $("input[name='markdown-mode']", $markdownPanel);
+        $markdownModeRadio.change(function () {
+            setMode(this.value);
         });
 
+        $content = $markdownPanel.find(".panel-content");
+        markdownPanel = PanelManager.createBottomPanel("?", $markdownPanel, 29);
+        $markdownPanel.on("panelCollapsed panelExpanded panelResizeUpdate", function () {
+            markdownEditor.setSize("100%", $content.height());
+        });
 
+        // Setup CodeMirror
+        markdownEditor = CodeMirror.fromTextArea(document.getElementById("markdown-editor"), {
+            lineNumbers: true,
+            styleActiveLine: true,
+            matchBrackets: true,
+            theme: "monokai",
+            mode: "markdown"
+        });
+        $markdownEditor = $(markdownEditor.getWrapperElement());
+        $markdownPreview = $markdownPanel.find(".markdown-preview");
+        $markdownPanel.trigger("panelResizeUpdate");
 
         // Register Commands
         CommandManager.register("Markdown Documentation", CMD_MARKDOWN, toggle);
@@ -120,6 +148,30 @@ define(function (require, exports, module) {
         var menu = MenuManager.getMenu(Commands.VIEW);
         menu.addMenuDivider();
         menu.addMenuItem(CMD_MARKDOWN, ["Ctrl-Alt-D"]);
+
+        // Handler for selectionChanged event
+        $(SelectionManager).on("selectionChanged", function (event, models, views) {
+            try {
+                if (models.length === 1) {
+                    var model = models[0];
+                    markdownEditor.setValue(model.documentation);
+                    $markdownPreview.html("<div style='margin: 10px'>" + markdown.toHTML(model.documentation) + "</div>");
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        });
+
+        // Load Preference
+        var visible = PreferenceManager.get(PREFERENCE_KEY);
+        if (visible === true) {
+            show();
+        } else {
+            hide();
+        }
+
+        setMode("edit");
+
     }
 
     // Initialize Extension
