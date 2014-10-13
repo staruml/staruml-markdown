@@ -29,6 +29,7 @@ define(function (require, exports, module) {
 
     var ExtensionUtils     = app.getModule("utils/ExtensionUtils"),
         PanelManager       = app.getModule("utils/PanelManager"),
+        Engine             = app.getModule("engine/Engine"),
         Repository         = app.getModule("engine/Repository"),
         SelectionManager   = app.getModule("engine/SelectionManager"),
         CommandManager     = app.getModule("command/CommandManager"),
@@ -54,6 +55,11 @@ define(function (require, exports, module) {
 
     var CMD_MARKDOWN   = "view.markdown",
         PREFERENCE_KEY = "view.markdown.visibility";
+
+    /**
+     * Current Element
+     */
+    var _currentElement = null;
 
     /**
      * Show Relationships Panel
@@ -97,6 +103,39 @@ define(function (require, exports, module) {
     }
 
 
+    function renderPreview() {
+        if (_currentElement) {
+            $markdownPreview.html("<div style='margin: 10px'>" + markdown.toHTML(_currentElement.documentation) + "</div>");
+        }
+    }
+
+    function setElement(elem) {
+        if (elem) {
+            _currentElement = elem;
+            markdownEditor.setOption("readOnly", false);
+            markdownEditor.setValue(_currentElement.documentation);
+            renderPreview();
+        } else {
+            _currentElement = null;
+            markdownEditor.setOption("readOnly", true);
+            markdownEditor.setValue("");
+            renderPreview();
+        }
+    }
+
+    function setDocumentation() {
+        try {
+            if (_currentElement) {
+                var doc = markdownEditor.getValue();
+                Engine.setProperty(_currentElement, 'documentation', doc);
+                renderPreview();
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+
     /**
      * Initialize Extension
      */
@@ -131,11 +170,14 @@ define(function (require, exports, module) {
 
         // Setup CodeMirror
         markdownEditor = CodeMirror.fromTextArea(document.getElementById("markdown-editor"), {
-            lineNumbers: true,
+            lineNumbers: false,
             styleActiveLine: true,
             matchBrackets: true,
             theme: "monokai",
-            mode: "markdown"
+            mode: "markdown",
+        });
+        markdownEditor.on("blur", function (instance) {
+            setDocumentation();
         });
         $markdownEditor = $(markdownEditor.getWrapperElement());
         $markdownPreview = $markdownPanel.find(".markdown-preview");
@@ -151,14 +193,13 @@ define(function (require, exports, module) {
 
         // Handler for selectionChanged event
         $(SelectionManager).on("selectionChanged", function (event, models, views) {
-            try {
-                if (models.length === 1) {
-                    var model = models[0];
-                    markdownEditor.setValue(model.documentation);
-                    $markdownPreview.html("<div style='margin: 10px'>" + markdown.toHTML(model.documentation) + "</div>");
-                }
-            } catch (err) {
-                console.error(err);
+            setElement(models.length === 1 ? models[0] : null);
+        });
+
+        // Handlers for element updated event
+        $(Repository).on('updated', function (event, elems) {
+            if (elems.length === 1 && elems[0] === _currentElement) {
+                setElement(elems[0]);
             }
         });
 
@@ -170,6 +211,7 @@ define(function (require, exports, module) {
             hide();
         }
 
+        // Start edit mode
         setMode("edit");
 
     }
