@@ -104,13 +104,13 @@ define(function (require, exports, module) {
 
 
     function renderPreview() {
-        if (_currentElement) {
+        if (_currentElement && _currentElement.documentation) {
             $markdownPreview.html("<div style='margin: 10px'>" + markdown.toHTML(_currentElement.documentation) + "</div>");
         }
     }
 
     function setElement(elem) {
-        if (elem) {
+        if (elem instanceof type.ExtensibleModel) {
             _currentElement = elem;
             markdownEditor.setOption("readOnly", false);
             markdownEditor.setValue(_currentElement.documentation);
@@ -193,7 +193,7 @@ define(function (require, exports, module) {
 
         // Handler for selectionChanged event
         $(SelectionManager).on("selectionChanged", function (event, models, views) {
-            setElement(models.length === 1 ? models[0] : null);
+            setElement(models.length > 0 ? models[0] : null);
         });
 
         // Handlers for element updated event
