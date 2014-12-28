@@ -37,7 +37,7 @@ define(function (require, exports, module) {
         MenuManager        = app.getModule("menu/MenuManager"),
         ContextMenuManager = app.getModule("menu/ContextMenuManager"),
         ModelExplorerView  = app.getModule("explorer/ModelExplorerView"),
-        PreferenceManager  = app.getModule("preference/PreferenceManager");
+        PreferenceManager  = app.getModule("core/PreferenceManager");
 
     require("markdown.min");
 
@@ -66,6 +66,7 @@ define(function (require, exports, module) {
      */
     function show() {
         markdownPanel.show();
+        markdownEditor.refresh();
         $button.addClass("selected");
         CommandManager.get(CMD_MARKDOWN).setChecked(true);
         PreferenceManager.set(PREFERENCE_KEY, true);
@@ -106,26 +107,30 @@ define(function (require, exports, module) {
     function renderPreview() {
         if (_currentElement && _currentElement.documentation) {
             $markdownPreview.html("<div style='margin: 10px'>" + markdown.toHTML(_currentElement.documentation) + "</div>");
+        } else {
+            $markdownPreview.html("");
         }
     }
 
     function setElement(elem) {
         if (elem instanceof type.ExtensibleModel) {
             _currentElement = elem;
-            markdownEditor.setOption("readOnly", false);
             markdownEditor.setValue(_currentElement.documentation);
+            markdownEditor.setOption("readOnly", false);
+            markdownEditor.refresh();
             renderPreview();
         } else {
             _currentElement = null;
-            markdownEditor.setOption("readOnly", true);
             markdownEditor.setValue("");
+            markdownEditor.setOption("readOnly", true);
+            markdownEditor.refresh();
             renderPreview();
         }
     }
 
     function setDocumentation() {
         try {
-            if (_currentElement) {
+            if (_currentElement && typeof _currentElement.documentation !== "undefined") {
                 var doc = markdownEditor.getValue();
                 Engine.setProperty(_currentElement, 'documentation', doc);
                 renderPreview();
