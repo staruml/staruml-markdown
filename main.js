@@ -50,6 +50,7 @@ define(function (require, exports, module) {
         $title,
         $close,
         $markdownModeRadio,
+        $toolbar,
         $content,
         $button = $("<a id='toolbar-markdown' href='#' title='Markdown Documentation'></a>");
 
@@ -70,6 +71,7 @@ define(function (require, exports, module) {
         $button.addClass("selected");
         CommandManager.get(CMD_MARKDOWN).setChecked(true);
         PreferenceManager.set(PREFERENCE_KEY, true);
+        $markdownPanel.trigger("panelResizeUpdate");
     }
 
     /**
@@ -167,9 +169,11 @@ define(function (require, exports, module) {
             setMode(this.value);
         });
 
+        $toolbar = $markdownPanel.find(".toolbar");
         $content = $markdownPanel.find(".panel-content");
         markdownPanel = PanelManager.createBottomPanel("?", $markdownPanel, 29);
         $markdownPanel.on("panelCollapsed panelExpanded panelResizeUpdate", function () {
+            $content.height($markdownPanel.height() - $toolbar.outerHeight());
             markdownEditor.setSize("100%", $content.height());
         });
 
