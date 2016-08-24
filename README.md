@@ -27,4 +27,4 @@ Click "Preview" button, you can see the preview of Markdown documentation of a s
 
 ---
 
-Licensed under the MIT license (see LICENSE file).
+Licensed under the MIT license (see [LICENSE file](https://github.com/staruml/Markdown/blob/master/LICENSE)).
